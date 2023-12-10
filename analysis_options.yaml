@@ -1,0 +1,12 @@
+include: package:pedantic_mono/analysis_options.yaml
+analyzer:
+  exclude:
+    - '**/*.g.dart'
+    - lib/gen/**
+  errors:
+    invalid_annotation_target: ignore
+    sort_pub_dependencies: ignore
+    one_member_abstracts: ignore
+    directives_ordering: ignore
+linter:
+  rules:
