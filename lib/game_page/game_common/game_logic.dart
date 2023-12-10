@@ -21,10 +21,12 @@ class GameLogic {
     for (var y = topCellY; y <= bottomCellY; y++) {
       for (var x = leftCellX; x <= rightCellX; x++) {
         if (mazeData[y][x] == 1) {
-          return true; // 壁に当たった
+          // 壁に当たった
+          return true;
         }
       }
     }
-    return false; // 壁に当たっていない
+    // 壁に当たっていない
+    return false;
   }
 }

@@ -19,34 +19,104 @@ class _GamePageState extends State<GamePage> {
   final GameLogic gameLogic = GameLogic();
   final BallController ballController = BallController();
   // ボールの初期位値
-  double dx = 200;
-  double dy = 200;
+  double dx = 0;
+  double dy = 0;
   // ボールの大きさ
   double ballDiameter = 0;
   double cellWidth = 0;
   double cellHeight = 0;
   Size? screenSize;
+  // 衝突したかどうか
+  bool hasCollided = false;
 
   // デバイスを傾けた時のボールの位置を更新する
   void updateBallPosition() {
     // 加速度センサーからの新しい位置データがあるたびに実行されるコールバック関数を呼び出す
     ballController.updateBallPosition((newDx, newDy) {
-      setState(() {
-        // ボールの位置を更新
-        dx -= newDx;
-        dy += newDy;
+      if (!hasCollided) {
+        // 新しい座標
+        double tentativeDx = dx - newDx;
+        double tentativeDy = dy + newDy;
         // 画面の範囲を超えないように座標は 0 と (画面の幅 - ボールの直径) の間に制限
-        dx = dx.clamp(0, MediaQuery.sizeOf(context).width - ballDiameter);
-        dy = dy.clamp(0, MediaQuery.sizeOf(context).height - ballDiameter);
-      });
+        tentativeDx = tentativeDx.clamp(
+          0,
+          MediaQuery.sizeOf(context).width - ballDiameter,
+        );
+        tentativeDy = tentativeDy.clamp(
+          0,
+          MediaQuery.sizeOf(context).height - ballDiameter,
+        );
+        // 衝突判定
+        if (!gameLogic.isCollision(
+          tentativeDx,
+          tentativeDy,
+          ballDiameter,
+          cellWidth,
+          cellHeight,
+          mazeData,
+        )) {
+          // 衝突していない場合
+          setState(() {
+            // ボールの位置を更新
+            dx = tentativeDx;
+            dy = tentativeDy;
+          });
+        } else {
+          // 衝突した場合の処理（例：ボールを停止、ゲームオーバー処理など）
+          print('衝突');
+          setState(() {
+            hasCollided = true;
+          });
+          // ダイアログ表示
+          _gameOverDialog();
+        }
+      }
     });
   }
 
-  @override
-  void initState() {
-    super.initState();
+  void _setInitialBallPosition() {
+    for (int y = 0; y < mazeData.length; y++) {
+      for (int x = 0; x < mazeData[y].length; x++) {
+        if (mazeData[y][x] == 2) {
+          // ボールの初期位置をセルの中心に設定
+          dx = x * cellWidth + cellWidth / 2;
+          dy = y * cellHeight + cellHeight / 2;
+          return;
+        }
+      }
+    }
+  }
 
-    updateBallPosition();
+  void _gameOverDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('ゲームオーバー'),
+          content: const Text('もう一度やりますか？'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('最初から'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                _setInitialBallPosition();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // @override
+  // void initState() {
+  //   super.initState();
+  // }
+
+  @override
+  void dispose() {
+    ballController.dispose();
+    super.dispose();
   }
 
   @override
@@ -60,6 +130,9 @@ class _GamePageState extends State<GamePage> {
     cellHeight = screenSize!.height / mazeData.length;
     // ボールの大きさは壁より少し小さくする
     ballDiameter = min(cellWidth, cellHeight) * 0.9;
+
+    _setInitialBallPosition();
+    updateBallPosition();
   }
 
   @override
@@ -77,7 +150,7 @@ class _GamePageState extends State<GamePage> {
           ),
           // ボール
           AnimatedPositioned(
-            duration: const Duration(milliseconds: 200),
+            duration: const Duration(milliseconds: 220),
             left: dx,
             top: dy,
             child: BallWidget(ballDiameter: ballDiameter),
@@ -101,8 +174,8 @@ class MazePainter extends CustomPainter {
     // どのように図形を描画するか定義
     final paint = Paint()..color = Colors.green;
     // 迷路の描画
-    for (var i = 0; i < mazeData.length; i++) {
-      for (var j = 0; j < mazeData[i].length; j++) {
+    for (int i = 0; i < mazeData.length; i++) {
+      for (int j = 0; j < mazeData[i].length; j++) {
         if (mazeData[i][j] == 1) {
           // 描画する四角形の位置とサイズを定義
           final rect = Rect.fromLTWH(
