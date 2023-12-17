@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:maze_roller/game_page/game_page.dart';
+import 'package:maze_roller/pages/stage_select_page/stage_select_page.dart';
 
 void main() {
   runApp(const MyApp());
@@ -15,7 +15,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: const GamePage(),
+      home: const StageSelectPage(),
     );
   }
 }
