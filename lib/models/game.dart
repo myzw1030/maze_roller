@@ -23,6 +23,7 @@ class GameNotifier extends StateNotifier<GameState> {
     var ballDiameter = min(cellWidth, cellHeight) * 0.9;
 
     setInitialBallPosition(mazeData, cellWidth, cellHeight, ballDiameter);
+    startListeningToSensor();
   }
 
   // 初期位置をセットする

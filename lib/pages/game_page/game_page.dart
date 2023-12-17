@@ -1,113 +1,64 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maze_roller/common/game_logic.dart';
+import 'package:maze_roller/models/game.dart';
+import 'package:maze_roller/pages/game_page/components/ball_widget.dart';
+import 'package:maze_roller/pages/game_page/components/maze_painter.dart';
 
-class GamePage extends StatefulWidget {
+class GamePage extends ConsumerStatefulWidget {
   // 迷路データ
   final List<List<int>> mazeData;
 
   const GamePage({super.key, required this.mazeData});
 
   @override
-  State<GamePage> createState() => _GamePageState();
+  GamePageState createState() => GamePageState();
 }
 
-class _GamePageState extends State<GamePage> {
-  final GameLogic gameLogic = GameLogic();
-
+class GamePageState extends ConsumerState<GamePage> {
   @override
-  // initStateの直後に呼ばれ、contextにアクセスすることが可能
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    gameLogic.initializeGame(context, widget.mazeData);
+  void initState() {
+    super.initState();
+    // 初回ビルドが終了するまで状態変更を待つことで、ビルド中に状態変更してクラッシュすることを防ぐ
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(gameProvider.notifier).initializeGame(context, widget.mazeData);
+      // gameLogic.initializeGame(context, widget.mazeData);
+    });
   }
 
   @override
   void dispose() {
-    gameLogic.dispose();
+    // gameLogic.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final gameState = ref.watch(gameProvider);
+
     return Scaffold(
       body: Stack(
         children: [
           // 迷路描画
           CustomPaint(
             painter: MazePainter(
-              cellWidth: gameLogic.cellWidth,
-              cellHeight: gameLogic.cellHeight,
+              cellWidth: gameState.cellWidth,
+              cellHeight: gameState.cellHeight,
               mazeData: widget.mazeData,
             ),
-            size: Size(gameLogic.screenSize.width, gameLogic.screenSize.height),
+            size: Size(
+              gameState.screenSize.width,
+              gameState.screenSize.height,
+            ),
           ),
           // ボール
           AnimatedPositioned(
             duration: const Duration(milliseconds: 220),
-            left: gameLogic.dx,
-            top: gameLogic.dy,
-            child: BallWidget(ballDiameter: gameLogic.ballDiameter),
+            left: gameState.dx,
+            top: gameState.dy,
+            child: BallWidget(ballDiameter: gameState.ballDiameter),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class MazePainter extends CustomPainter {
-  MazePainter(
-      {required this.cellWidth,
-      required this.cellHeight,
-      required this.mazeData});
-  final double cellWidth;
-  final double cellHeight;
-  final List<List<int>> mazeData;
-  @override
-  // 描画ロジック
-  void paint(Canvas canvas, Size size) {
-    // どのように図形を描画するか定義
-    final paint = Paint()..color = Colors.green;
-    // 迷路の描画
-    for (int i = 0; i < mazeData.length; i++) {
-      for (int j = 0; j < mazeData[i].length; j++) {
-        if (mazeData[i][j] == 1) {
-          // 描画する四角形の位置とサイズを定義
-          final rect = Rect.fromLTWH(
-            j * cellWidth,
-            i * cellHeight,
-            cellWidth,
-            cellHeight,
-          );
-          // 四角形をキャンバスに描画
-          canvas.drawRect(rect, paint);
-        }
-      }
-    }
-  }
-
-  @override
-  // 再描画するか定義
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
-  }
-}
-
-class BallWidget extends StatelessWidget {
-  const BallWidget({
-    super.key,
-    required this.ballDiameter,
-  });
-
-  final double ballDiameter;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: ballDiameter,
-      height: ballDiameter,
-      decoration: const BoxDecoration(
-        color: Colors.red,
-        shape: BoxShape.circle,
       ),
     );
   }
