@@ -1,11 +1,15 @@
 import 'dart:math';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:maze_roller/common/ball_controller.dart';
 import 'package:maze_roller/models/game_state/game_state.dart';
 
-class GameNotifier extends StateNotifier<GameState> {
-  GameNotifier() : super(GameState());
+class GameNotifier extends Notifier<GameState> {
+  @override
+  GameState build() {
+    return GameState();
+  }
 
   late BallController ballController = BallController();
 
@@ -14,15 +18,19 @@ class GameNotifier extends StateNotifier<GameState> {
     BuildContext context,
     List<List<int>> mazeData,
   ) {
-    var screenSize = MediaQuery.sizeOf(context);
+    final screenSize = MediaQuery.sizeOf(context);
     // スクリーン幅を列の数で割ることで、各セルの幅を計算
-    var cellWidth = screenSize.width / mazeData[0].length;
+    final cellWidth = screenSize.width / mazeData[0].length;
     // スクリーンの高さを行の数で割ることで、各セルの高さを計算
-    var cellHeight = screenSize.height / mazeData.length;
+    final cellHeight = screenSize.height / mazeData.length;
     // ボールの大きさは壁より少し小さくする
-    var ballDiameter = min(cellWidth, cellHeight) * 0.9;
+    final ballDiameter = min(cellWidth, cellHeight) * 0.9;
 
-    setInitialBallPosition(mazeData, cellWidth, cellHeight, ballDiameter);
+    print('screenSize:$screenSize');
+    print('ballDiameter:$ballDiameter');
+
+    setInitialBallPosition(
+        mazeData, cellWidth, cellHeight, ballDiameter, screenSize);
     startListeningToSensor();
   }
 
@@ -32,18 +40,21 @@ class GameNotifier extends StateNotifier<GameState> {
     double cellWidth,
     double cellHeight,
     double ballDiameter,
+    Size screenSize,
   ) {
     for (int y = 0; y < mazeData.length; y++) {
       for (int x = 0; x < mazeData[y].length; x++) {
         if (mazeData[y][x] == 2) {
-          var dx = x * cellWidth + cellWidth / 2 - ballDiameter / 2;
-          var dy = y * cellHeight + cellHeight / 2 - ballDiameter / 2;
+          final dx = x * cellWidth + cellWidth / 2 - ballDiameter / 2;
+          final dy = y * cellHeight + cellHeight / 2 - ballDiameter / 2;
           state = state.copyWith(
             dx: dx,
             dy: dy,
             ballDiameter: ballDiameter,
             cellWidth: cellWidth,
             cellHeight: cellHeight,
+            screenSize: screenSize,
+            mazeDate: mazeData,
           );
           return;
         }
@@ -64,13 +75,10 @@ class GameNotifier extends StateNotifier<GameState> {
           tentativeDx.clamp(0, state.screenSize.width - state.ballDiameter);
       tentativeDy =
           tentativeDy.clamp(0, state.screenSize.height - state.ballDiameter);
-
+      print('state.mazeDate:$state.mazeDate');
       // 衝突していない場合ボールの位置を更新
-      if (!isCollision(
-        tentativeDx,
-        tentativeDy,
-        state.mazeDate!,
-      )) {
+      if (state.mazeDate != null &&
+          !isCollision(tentativeDx, tentativeDy, state.mazeDate!)) {
         state = state.copyWith(dx: tentativeDx, dy: tentativeDy);
         print('更新中');
       } else {
@@ -82,11 +90,7 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 
   // 衝突判定
-  bool isCollision(
-    double dx,
-    double dy,
-    List<List<int>> mazeData,
-  ) {
+  bool isCollision(double dx, double dy, List<List<int>> mazeData) {
     // ボールの中心座標
     final centerX = dx + state.ballDiameter / 2;
     final centerY = dy + state.ballDiameter / 2;
@@ -101,6 +105,12 @@ class GameNotifier extends StateNotifier<GameState> {
     final bottomCellY =
         ((centerY + state.ballDiameter / 2) / state.cellHeight).floor();
 
+    print('centerX:$centerX');
+    print('centerY:$centerY');
+    print('leftCellX:$leftCellX');
+    print('rightCellX:$rightCellX');
+    print('topCellY:$topCellY');
+    print('bottomCellY:$bottomCellY');
     // これらのセルが壁かどうかをチェック
     for (var y = topCellY; y <= bottomCellY; y++) {
       for (var x = leftCellX; x <= rightCellX; x++) {
@@ -115,6 +125,5 @@ class GameNotifier extends StateNotifier<GameState> {
   }
 }
 
-final gameProvider = StateNotifierProvider<GameNotifier, GameState>((ref) {
-  return GameNotifier();
-});
+final gameProvider =
+    NotifierProvider<GameNotifier, GameState>(GameNotifier.new);
