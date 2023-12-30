@@ -1,11 +1,5 @@
 import 'package:flutter/material.dart';
 
-enum mazePaint {
-  wall,
-  start,
-  goal,
-}
-
 class MazePainter extends CustomPainter {
   MazePainter({
     required this.cellWidth,
@@ -20,6 +14,10 @@ class MazePainter extends CustomPainter {
   @override
   // 描画ロジック
   void paint(Canvas canvas, Size size) {
+    // セルの値に応じて色を設定
+    final paintWall = Paint()..color = Colors.black;
+    final paintStart = Paint()..color = Colors.amber;
+    final paintGoal = Paint()..color = Colors.green;
     // 迷路の描画
     for (int i = 0; i < mazeData.length; i++) {
       for (int j = 0; j < mazeData[i].length; j++) {
@@ -30,10 +28,6 @@ class MazePainter extends CustomPainter {
           cellWidth,
           cellHeight,
         );
-        // セルの値に応じて色を設定
-        final paintWall = Paint()..color = Colors.black87;
-        final paintStart = Paint()..color = Colors.amber;
-        final paintGoal = Paint()..color = Colors.green;
         switch (mazeData[i][j]) {
           case 1:
             canvas.drawRect(rect, paintWall);
