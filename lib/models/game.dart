@@ -123,6 +123,29 @@ class GameNotifier extends Notifier<GameState> {
     // 壁に当たっていない
     return false;
   }
+
+  void gameOverDialog(
+    BuildContext context,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('ゲームオーバー'),
+          content: const Text('もう一度やりますか？'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('最初から'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                // setInitialBallPosition();
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
 }
 
 final gameProvider =
