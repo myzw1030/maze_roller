@@ -24,7 +24,7 @@ class GameNotifier extends Notifier<GameState> {
     // スクリーンの高さを行の数で割ることで、各セルの高さを計算
     final cellHeight = screenSize.height / mazeData.length;
     // ボールの大きさは壁より少し小さくする
-    final ballDiameter = min(cellWidth, cellHeight) * 0.9;
+    final ballDiameter = min(cellWidth, cellHeight) * 0.8;
 
     print('screenSize:$screenSize');
     print('ballDiameter:$ballDiameter');
