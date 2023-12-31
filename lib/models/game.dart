@@ -24,10 +24,7 @@ class GameNotifier extends Notifier<GameState> {
     // スクリーンの高さを行の数で割ることで、各セルの高さを計算
     final cellHeight = screenSize.height / mazeData.length;
     // ボールの大きさは壁より少し小さくする
-    final ballDiameter = min(cellWidth, cellHeight) * 0.8;
-
-    print('screenSize:$screenSize');
-    print('ballDiameter:$ballDiameter');
+    final ballDiameter = min(cellWidth, cellHeight) * 0.6;
 
     setInitialBallPosition(
         mazeData, cellWidth, cellHeight, ballDiameter, screenSize);
@@ -75,46 +72,45 @@ class GameNotifier extends Notifier<GameState> {
           tentativeDx.clamp(0, state.screenSize.width - state.ballDiameter);
       tentativeDy =
           tentativeDy.clamp(0, state.screenSize.height - state.ballDiameter);
-      print('state.mazeDate:$state.mazeDate');
       // 衝突していない場合ボールの位置を更新
-      if (state.mazeDate != null &&
-          !isCollision(tentativeDx, tentativeDy, state.mazeDate!)) {
+      if (state.mazeDate != null && !isCollision(state.mazeDate!)) {
         state = state.copyWith(dx: tentativeDx, dy: tentativeDy);
         print('更新中');
       } else {
         // 衝突した場合の処理（例：ボールを停止、ゲームオーバー処理など）
-        print('衝突');
         state = state.copyWith(hasCollided: true);
+        print('衝突: ${state.hasCollided}');
       }
     });
   }
 
+  // 判定リセット
+  void collisionBoolChange() {
+    state = state.copyWith(hasCollided: false);
+  }
+
   // 衝突判定
-  bool isCollision(double dx, double dy, List<List<int>> mazeData) {
-    // ボールの中心座標
-    final centerX = dx + state.ballDiameter / 2;
-    final centerY = dy + state.ballDiameter / 2;
-
-    // ボールの辺縁が含まれるセルの範囲を計算
-    final leftCellX =
-        ((centerX - state.ballDiameter / 2) / state.cellWidth).floor();
-    final rightCellX =
-        ((centerX + state.ballDiameter / 2) / state.cellWidth).floor();
-    final topCellY =
-        ((centerY - state.ballDiameter / 2) / state.cellHeight).floor();
-    final bottomCellY =
-        ((centerY + state.ballDiameter / 2) / state.cellHeight).floor();
-
-    print('centerX:$centerX');
-    print('centerY:$centerY');
-    print('leftCellX:$leftCellX');
-    print('rightCellX:$rightCellX');
-    print('topCellY:$topCellY');
-    print('bottomCellY:$bottomCellY');
-    // これらのセルが壁かどうかをチェック
-    for (var y = topCellY; y <= bottomCellY; y++) {
-      for (var x = leftCellX; x <= rightCellX; x++) {
-        if (mazeData[y][x] == 1) {
+  bool isCollision(List<List<int>> mazeData) {
+    // ボールの円周上でチェックする点の数
+    int pointsToCheck = 24;
+    // ボールの円周上の各点間の角度を計算（等間隔の角度）
+    double angleStep = 2 * pi / pointsToCheck;
+    // ボールの円周上の各点の座標を計算
+    for (int i = 0; i < pointsToCheck; i++) {
+      // ボールの中心からの各点の角度を計算
+      double angle = i * angleStep;
+      // 円周上の点の座標
+      double pointX = state.dx + cos(angle) * state.ballDiameter / 2 * 0.1;
+      double pointY = state.dy + sin(angle) * state.ballDiameter / 2 * 0.1;
+      // 計算された点がどの迷路のセルにあるか
+      int cellX = (pointX / state.cellWidth).floor();
+      int cellY = (pointY / state.cellHeight).floor();
+      // 計算されたセル座標が迷路の範囲内にあることを確認
+      if (cellX >= 0 &&
+          cellX < mazeData[0].length &&
+          cellY >= 0 &&
+          cellY < mazeData.length) {
+        if (mazeData[cellY][cellX] == 1) {
           // 壁に当たった
           return true;
         }
@@ -124,27 +120,9 @@ class GameNotifier extends Notifier<GameState> {
     return false;
   }
 
-  void gameOverDialog(
-    BuildContext context,
-  ) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('ゲームオーバー'),
-          content: const Text('もう一度やりますか？'),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('最初から'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                // setInitialBallPosition();
-              },
-            ),
-          ],
-        );
-      },
-    );
+  // 破棄
+  void dispose() {
+    ballController.dispose();
   }
 }
 

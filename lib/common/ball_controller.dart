@@ -12,8 +12,8 @@ class BallController {
     // 加速度センサーからのデータをリッスン
     _listener = accelerometerEventStream().listen((AccelerometerEvent event) {
       // 新しい位置を計算
-      final newDx = event.x * 40;
-      final newDy = event.y * 40;
+      final newDx = event.x * 10;
+      final newDy = event.y * 10;
       // コールバック関数を呼び出して、新しい位置を通知
       onPositionChanged(newDx, newDy);
     });
